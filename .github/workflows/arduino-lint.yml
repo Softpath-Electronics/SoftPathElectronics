@@ -1,0 +1,22 @@
+name: Arduino Lint Full Check
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the code
+      - uses: actions/checkout@v4
+
+      # Run Arduino Lint with strict compliance and library-manager checks
+      - uses: arduino/arduino-lint-action@v1
+        with:
+          compliance: strict              # Enforce strict compliance
+          library-manager: update         # Check for Library Manager updates
+          project-type: all               # Run checks on all project types (sketch, library, platform)
+          recursive: true                 # Recursively search for Arduino projects
+          verbose: true                   # Enable verbose output
+          report-file: arduino_lint_report.json  # Save the report to a file
