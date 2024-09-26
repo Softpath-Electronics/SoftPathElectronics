@@ -6,7 +6,7 @@
  * er sie vor der Verwendung ausreichend getestet hat.
  * Durch die Nutzung dieser Software erklären Sie, dass Sie die Sicherheitswarnungen und Gebrauchsanweisungen gelesen und verstanden haben.
  * 
- * DISLAIMER:
+ * DISCLAIMER:
  * This software is provided "as-is" without any express or implied warranty.
  * In no event shall the author or company be held liable for any damages arising from the use of this software.
  * It is the user's responsibility to ensure that the software is suitable for their needs and that they have tested it
@@ -25,7 +25,7 @@
 #include "SoftPathElectronics.h"
 
 CustomKeyboard::CustomKeyboard() {
-    _debug = true;
+    _debug = false;
     _lastKey = -1;
     _resetRequired = false;
     _pressed = false;
@@ -59,7 +59,7 @@ void CustomKeyboard::setupKeyboard() {
         while (true) {
             calibrateKey(i);
             Serial.print("Möchtest du zu Taste ");
-            Serial.print(i + 2);
+            Serial.print(i + 1);
             Serial.println(" fortfahren oder 'redo' eingeben? (Enter für fortfahren / redo eingeben):");
             while (Serial.available() == 0) {}
             String input = Serial.readStringUntil('\n');
@@ -196,23 +196,103 @@ void CustomKeyboard::promptUser(String message) {
 }
 
 void CustomKeyboard::setupKey(const String& key) {
-    int spaceIndex = key.indexOf(' ');
-    int nextIndex = 0;
+    int values[20] = {0}; // Initialize all to zero
+    int index = 0;
+    int startIndex = 0;
+    int spaceIndex = key.indexOf(' ', startIndex);
 
-    // Werte extrahieren und in _keyValues speichern
-    for (int i = 0; i < 16 && spaceIndex != -1; i++) {
-        _keyValues[i] = key.substring(nextIndex, spaceIndex).toInt();
-        nextIndex = spaceIndex + 1;
-        spaceIndex = key.indexOf(' ', nextIndex);
+    // Parse the key string and fill the values array
+    while (spaceIndex != -1 && index < 20) {
+        String token = key.substring(startIndex, spaceIndex);
+        values[index++] = token.toInt();
+        startIndex = spaceIndex + 1;
+        spaceIndex = key.indexOf(' ', startIndex);
+    }
+    // Capture the last value if there's no trailing space
+    if (startIndex < key.length() && index < 20) {
+        String token = key.substring(startIndex);
+        values[index++] = token.toInt();
+    }
+
+    // Check if we have all the required values
+    if (index < 20) {
+        Serial.println("Error: Key string does not have enough values.");
+        return;
+    }
+
+    // Assign the values to the appropriate variables
+    _pin = values[0];
+    _numKeys = values[1];
+    _tolerance = values[2];
+    _debounceMode = (values[3] != 0);
+    for (int i = 0; i < 16; i++) {
+        _keyValues[i] = values[4 + i];
+    }
+
+    // Initialize the pin
+    pinMode(_pin, INPUT);
+
+    if (_debug) {
+        Serial.println("Keyboard Configuration:");
+        Serial.print("Pin: ");
+        Serial.println(_pin);
+        Serial.print("Number of Keys: ");
+        Serial.println(_numKeys);
+        Serial.print("Tolerance: ");
+        Serial.println(_tolerance);
+        Serial.print("Debounce Mode: ");
+        Serial.println(_debounceMode ? "Enabled" : "Disabled");
+        Serial.print("Key Values: ");
+        for (int i = 0; i < _numKeys; i++) {
+            Serial.print(_keyValues[i]);
+            if (i < _numKeys - 1) Serial.print(", ");
+        }
+        Serial.println();
     }
 }
 
 int CustomKeyboard::getKeyPressed() {
     int value = readAnalogValue();
+    if (_debug) {
+        Serial.print("Analog Value Read: ");
+        Serial.println(value);
+    }
     for (int i = 0; i < _numKeys; i++) {
         if (abs(value - _keyValues[i]) < _tolerance) {
-            return i + 1;  // Rückgabe der Tastennummer, beginnend mit 1
+            if (_lastKey != i + 1 || _resetRequired) {
+                _lastKey = i + 1;
+                _resetRequired = false;
+                if (_debounceMode && value == 0) {
+                    _resetRequired = true;
+                    continue;
+                }
+                return i + 1;  // Rückgabe der Tastennummer, beginnend mit 1
+            }
         }
     }
+    _lastKey = -1;
     return -1;  // Keine Taste erkannt
+}
+
+int CustomKeyboard::getKeyValue(int index) {
+    if (index >= 0 && index < 16) {
+        return _keyValues[index];
+    }
+    return -1;
+}
+
+int CustomKeyboard::getPin() {
+    return _pin;
+}
+
+int CustomKeyboard::getNumKeys() {
+    return _numKeys;
+}
+
+int CustomKeyboard::getTolerance() {
+    return _tolerance;
+}
+
+bool CustomKeyboard::getDebounceMode() {
+    return _debounceMode;
 }
