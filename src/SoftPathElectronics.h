@@ -6,7 +6,7 @@
  * er sie vor der Verwendung ausreichend getestet hat.
  * Durch die Nutzung dieser Software erklären Sie, dass Sie die Sicherheitswarnungen und Gebrauchsanweisungen gelesen und verstanden haben.
  * 
- * DISLAIMER:
+ * DISCLAIMER:
  * This software is provided "as-is" without any express or implied warranty.
  * In no event shall the author or company be held liable for any damages arising from the use of this software.
  * It is the user's responsibility to ensure that the software is suitable for their needs and that they have tested it
@@ -68,7 +68,6 @@ private:
     void calibrateKey(int keyIndex);
     int readAnalogValue();
     void promptUser(String message);
-    int readIntFromSerial();
     int readIntWithPrompt(String prompt);
     bool readBoolWithPrompt(String prompt);
     int calculateRobustMean(std::vector<int>& values);
