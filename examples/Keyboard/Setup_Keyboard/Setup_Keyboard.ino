@@ -6,7 +6,7 @@
  * er sie vor der Verwendung ausreichend getestet hat.
  * Durch die Nutzung dieser Software erklären Sie, dass Sie die Sicherheitswarnungen und Gebrauchsanweisungen gelesen und verstanden haben.
  * 
- * DISLAIMER:
+ * DISCLAIMER:
  * This software is provided "as-is" without any express or implied warranty.
  * In no event shall the author or company be held liable for any damages arising from the use of this software.
  * It is the user's responsibility to ensure that the software is suitable for their needs and that they have tested it
@@ -22,19 +22,29 @@
  * prior written consent is prohibited.
  */
 
-#include "SoftPathElectronics.h"
+#include <SoftPathElectronics.h>
 
-// Instantiate the CustomKeyboard object
 CustomKeyboard keyboard;
 
 void setup() {
-    // Setup Serial communication for debugging
     Serial.begin(115200);
-    delay(1000); // Give some time to open the serial monitor
+    while (!Serial) {
+        ; // Warten auf Serial Verbindung
+    }
+    Serial.println("Keyboard Ready...");
 
-    // Call the setupKeyboard method to configure the keyboard
-    keyboard.setupKeyboard();
+    // Beispielschlüssel, ersetzen durch den tatsächlichen Schlüssel aus dem Setup-Script
+    // Format: "<pin> <numKeys> <tolerance> <debounceMode> <keyValue1> ... <keyValue16>"
+    String key = "34 3 20 0 4095 1144 615 0 0 0 0 0 0 0 0 0 0 0 0 0";
+    keyboard.setupKey(key);
 }
 
 void loop() {
+    int key = keyboard.getKeyPressed();
+    if (key != -1) {
+        Serial.print("Taste gedrückt: ");
+        Serial.println(key);
+    }
+
+    delay(100); // Zum Entprellen
 }
