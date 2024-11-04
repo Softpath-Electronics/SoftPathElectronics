@@ -24,27 +24,21 @@
 
 #include <SoftPathElectronics.h>
 
+// Erstelle ein CustomKeyboard Objekt
 CustomKeyboard keyboard;
 
 void setup() {
+    // Starte die serielle Kommunikation
     Serial.begin(115200);
     while (!Serial) {
-        ; // Warten auf Serial Verbindung
+        ; // Warten auf serielle Verbindung
     }
-    Serial.println("Keyboard Ready...");
+    Serial.println("Starte Tastenkalibrierung...");
 
-    // Beispielschlüssel, ersetzen durch den tatsächlichen Schlüssel aus dem Setup-Script
-    // Format: "<pin> <numKeys> <tolerance> <debounceMode> <keyValue1> ... <keyValue16>"
-    String key = "34 3 20 0 4095 1144 615 0 0 0 0 0 0 0 0 0 0 0 0 0";
-    keyboard.setupKey(key);
+    // Führe die Kalibrierung durch
+    keyboard.setupKeyboard();
 }
 
 void loop() {
-    int key = keyboard.getKeyPressed();
-    if (key != -1) {
-        Serial.print("Taste gedrückt: ");
-        Serial.println(key);
-    }
-
-    delay(100); // Zum Entprellen
+    // Während der Kalibrierung nichts tun
 }
