@@ -21,26 +21,13 @@
  * This library is licensed for personal, non-commercial use only. Commercial use, reproduction, or redistribution without
  * prior written consent is prohibited.
  */
-
 #ifndef SOFT_PATH_ELECTRONICS_H
 #define SOFT_PATH_ELECTRONICS_H
 
 #include <Arduino.h>
-#include <vector>
 
-/*
- * DISCLAIMER:
- * This software is provided "as-is" without any express or implied warranty.
- * In no event shall the author or company be held liable for any damages
- * arising from the use of this software. It is the user's responsibility
- * to ensure that the software is suitable for their needs and that they
- * have tested it sufficiently before using it in any project. By using this
- * software, you agree that you have read and understood the safety warnings
- * and usage instructions.
- * 
- * This library is licensed for personal, non-commercial use only. Commercial use,
- * reproduction, or redistribution without prior written consent is prohibited.
- */
+// Maximale Anzahl von Messwerten pro Taste zur Robust-Mean-Berechnung
+#define MAX_SAMPLES 20  // Reduziert von 100 auf 20
 
 class CustomKeyboard {
 public:
@@ -65,13 +52,17 @@ private:
     int _lastKey;
     bool _resetRequired;
     bool _pressed;
+
     void calibrateKey(int keyIndex);
     int readAnalogValue();
     void promptUser(String message);
     int readIntWithPrompt(String prompt);
     bool readBoolWithPrompt(String prompt);
-    int calculateRobustMean(std::vector<int>& values);
+    int calculateRobustMean(int* values, int count);
     int readKeyValue();
+
+    // Verschieben des Arrays nach statisch zugewiesenen Speicher
+    int _values[MAX_SAMPLES];
 };
 
 #endif
