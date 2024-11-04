@@ -30,9 +30,7 @@ CustomKeyboard keyboard;
 void setup() {
     // Starte die serielle Kommunikation
     Serial.begin(115200);
-    while (!Serial) {
-        ; // Warten auf serielle Verbindung
-    }
+    // Entfernen der 'while (!Serial) { ; }' Zeile, um Hängenbleiben zu vermeiden
     Serial.println("Starte Tastenkalibrierung...");
 
     // Führe die Kalibrierung durch
@@ -42,3 +40,4 @@ void setup() {
 void loop() {
     // Während der Kalibrierung nichts tun
 }
+
