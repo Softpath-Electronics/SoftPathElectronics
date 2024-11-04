@@ -21,18 +21,20 @@
  * This library is licensed for personal, non-commercial use only. Commercial use, reproduction, or redistribution without
  * prior written consent is prohibited.
  */
-
 #include "SoftPathElectronics.h"
 
+// Konstruktor
 CustomKeyboard::CustomKeyboard() {
-    _debug = false;
+    _debug = false;  // Setzen Sie dies auf 'true', um Debugging zu aktivieren
     _lastKey = -1;
     _resetRequired = false;
     _pressed = false;
 }
 
+// Initialisierung der Tastatur
 void CustomKeyboard::setupKeyboard() {
     Serial.begin(115200);
+    // Entfernen der 'while (!Serial) { ; }' Zeile, um Hängenbleiben zu vermeiden
 
     if (!readBoolWithPrompt("Haben Sie alle Sicherheitshinweise gelesen? (y/n):")) {
         Serial.println("Bitte lesen Sie die Sicherheitshinweise, bevor Sie fortfahren.");
@@ -54,26 +56,43 @@ void CustomKeyboard::setupKeyboard() {
 
     _debounceMode = readBoolWithPrompt("Soll eine Taste erst gezählt werden, wenn der analoge Wert zwischendurch 0 war? (y/n):");
 
+    // Initialisieren des Pins
+    pinMode(_pin, INPUT);
+
     Serial.println("Starte Tastenkalibrierung...");
     for (int i = 0; i < _numKeys; i++) {
         while (true) {
             calibrateKey(i);
-            Serial.print("Möchtest du zu Taste ");
+            Serial.print("Taste ");
             Serial.print(i + 1);
-            Serial.println(" fortfahren oder 'redo' eingeben? (Enter für fortfahren / redo eingeben):");
-            while (Serial.available() == 0) {}
+            Serial.println(" wurde kalibriert.");
+
+            if (i < _numKeys - 1) {
+                Serial.print("Möchtest du mit Taste ");
+                Serial.print(i + 2);
+                Serial.print(" fortfahren oder 'redo' eingeben für Taste ");
+                Serial.print(i + 1);
+                Serial.println("? (Enter für fortfahren / redo eingeben):");
+            } else {
+                Serial.println("Kalibrierung abgeschlossen.");
+            }
+
+            while (Serial.available() == 0) {
+                // Warten auf Benutzereingabe
+            }
             String input = Serial.readStringUntil('\n');
             input.trim();
             if (input.equalsIgnoreCase("redo")) {
-                continue;
+                continue; // Wiederhole die Kalibrierung der aktuellen Taste
             }
-            break;
+            break; // Gehe zur nächsten Taste
         }
     }
-    Serial.println("Kalibrierung abgeschlossen.");
+    Serial.println("Kalibrierung aller Tasten abgeschlossen.");
     printKey();
 }
 
+// Kalibriert eine einzelne Taste
 void CustomKeyboard::calibrateKey(int keyIndex) {
     int value1, value2;
 
@@ -93,14 +112,15 @@ void CustomKeyboard::calibrateKey(int keyIndex) {
     }
 }
 
+// Liest einen einzelnen Tastendruck-Wert
 int CustomKeyboard::readKeyValue() {
-    std::vector<int> values;
+    int count = 0;
     int value;
 
     while (true) {
         value = readAnalogValue();
-        if (value > 0) {
-            values.push_back(value);
+        if (value > 0 && count < MAX_SAMPLES) {
+            _values[count++] = value;
         }
         if (Serial.available() > 0) {
             String input = Serial.readStringUntil('\n');
@@ -109,70 +129,100 @@ int CustomKeyboard::readKeyValue() {
         }
     }
 
-    return calculateRobustMean(values);
+    return calculateRobustMean(_values, count);
 }
 
-int CustomKeyboard::calculateRobustMean(std::vector<int>& values) {
-    if (values.size() < 3) {
-        long sum = 0;
-        for (int value : values) {
-            sum += value;
-        }
-        return sum / values.size();
+// Berechnet den robusten Mittelwert (Median-basierte Methode)
+int CustomKeyboard::calculateRobustMean(int* values, int count) {
+    if (count == 0) {
+        return 0;
     }
 
-    std::sort(values.begin(), values.end());
-    int median = values[values.size() / 2];
-
-    int sum = 0;
-    int count = 0;
-    for (int value : values) {
-        if (abs(value - median) < _tolerance) {
-            sum += value;
-            count++;
+    // Sortieren der Werte (Bubble Sort)
+    for (int i = 0; i < count - 1; i++) {
+        for (int j = 0; j < count - i - 1; j++) {
+            if (values[j] > values[j + 1]) {
+                int temp = values[j];
+                values[j] = values[j + 1];
+                values[j + 1] = temp;
+            }
         }
     }
 
-    return (count > 0) ? (sum / count) : median;
+    // Berechnung des Medians
+    int median;
+    if (count % 2 == 0) {
+        median = (values[count / 2 - 1] + values[count / 2]) / 2;
+    } else {
+        median = values[count / 2];
+    }
+
+    // Summieren der Werte innerhalb der Toleranz um den Median
+    long sum = 0;
+    int validCount = 0;
+    for (int i = 0; i < count; i++) {
+        if (abs(values[i] - median) < _tolerance) {
+            sum += values[i];
+            validCount++;
+        }
+    }
+
+    if (validCount > 0) {
+        return sum / validCount;
+    } else {
+        return median;
+    }
 }
 
+// Liest den analogen Wert vom angegebenen Pin
 int CustomKeyboard::readAnalogValue() {
-    return analogRead(_pin);  // Reads the analog value from the specified pin
+    return analogRead(_pin);
 }
 
+// Liest eine boolesche Eingabe vom Benutzer (y/n)
 bool CustomKeyboard::readBoolWithPrompt(String prompt) {
     char value;
     while (true) {
         promptUser(prompt);
-        if (Serial.available() > 0) {
-            value = Serial.read();
-            while (Serial.available() > 0) {
-                Serial.read();  // Clear the buffer
-            }
-            if (value == 'y' || value == 'Y') {
-                return true;
-            } else if (value == 'n' || value == 'N') {
-                return false;
-            }
+        while (Serial.available() == 0) {
+            // Warten auf Eingabe
+        }
+        value = Serial.read();
+        while (Serial.available() > 0) {
+            Serial.read();  // Puffer leeren
+        }
+        if (value == 'y' || value == 'Y') {
+            return true;
+        } else if (value == 'n' || value == 'N') {
+            return false;
+        } else {
+            Serial.println("Ungültige Eingabe. Bitte 'y' oder 'n' eingeben.");
         }
     }
 }
 
+// Liest eine Ganzzahl vom Benutzer
 int CustomKeyboard::readIntWithPrompt(String prompt) {
-    int value;
+    int value = 0;
     while (true) {
         promptUser(prompt);
-        if (Serial.available() > 0) {
-            value = Serial.parseInt();
-            while (Serial.available() > 0) {
-                Serial.read();  // Clear the buffer
-            }
+        while (Serial.available() == 0) {
+            // Warten auf Eingabe
+        }
+        value = Serial.parseInt();
+        while (Serial.available() > 0) {
+            Serial.read();  // Puffer leeren
+        }
+        if (value != 0) {
             break;
+        } else {
+            Serial.println("Ungültige Eingabe. Bitte eine gültige Zahl eingeben.");
         }
     }
     return value;
 }
 
+// Gibt die konfigurierten Schlüsselwerte aus
 void CustomKeyboard::printKey() {
     Serial.print("Key: ");
     Serial.print(_pin);
@@ -183,44 +233,45 @@ void CustomKeyboard::printKey() {
     Serial.print(" ");
     Serial.print(_debounceMode ? 1 : 0);
     Serial.print(" ");
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < _numKeys; i++) { // Nur bis _numKeys iterieren
         Serial.print(_keyValues[i]);
         Serial.print(" ");
     }
     Serial.println();
 }
 
+// Zeigt eine Nachricht an und wartet auf Benutzereingabe
 void CustomKeyboard::promptUser(String message) {
     Serial.println(message);
-    while (Serial.available() == 0) {}
 }
 
+// Initialisiert die Tastatur mit gespeicherten Schlüsselwerten
 void CustomKeyboard::setupKey(const String& key) {
-    int values[20] = {0}; // Initialize all to zero
+    int values[20] = {0}; // Alle Werte mit 0 initialisieren
     int index = 0;
     int startIndex = 0;
     int spaceIndex = key.indexOf(' ', startIndex);
 
-    // Parse the key string and fill the values array
+    // Parse des Key-Strings und Füllen des values-Arrays
     while (spaceIndex != -1 && index < 20) {
         String token = key.substring(startIndex, spaceIndex);
         values[index++] = token.toInt();
         startIndex = spaceIndex + 1;
         spaceIndex = key.indexOf(' ', startIndex);
     }
-    // Capture the last value if there's no trailing space
+    // Letzten Wert erfassen, falls kein abschließendes Leerzeichen vorhanden ist
     if (startIndex < key.length() && index < 20) {
         String token = key.substring(startIndex);
         values[index++] = token.toInt();
     }
 
-    // Check if we have all the required values
+    // Überprüfen, ob alle erforderlichen Werte vorhanden sind
     if (index < 20) {
         Serial.println("Error: Key string does not have enough values.");
         return;
     }
 
-    // Assign the values to the appropriate variables
+    // Zuweisen der Werte zu den entsprechenden Variablen
     _pin = values[0];
     _numKeys = values[1];
     _tolerance = values[2];
@@ -229,7 +280,7 @@ void CustomKeyboard::setupKey(const String& key) {
         _keyValues[i] = values[4 + i];
     }
 
-    // Initialize the pin
+    // Initialisieren des Pins
     pinMode(_pin, INPUT);
 
     if (_debug) {
@@ -251,6 +302,7 @@ void CustomKeyboard::setupKey(const String& key) {
     }
 }
 
+// Gibt die Nummer der gedrückten Taste zurück
 int CustomKeyboard::getKeyPressed() {
     int value = readAnalogValue();
     if (_debug) {
@@ -274,6 +326,7 @@ int CustomKeyboard::getKeyPressed() {
     return -1;  // Keine Taste erkannt
 }
 
+// Gibt den Wert einer bestimmten Taste zurück
 int CustomKeyboard::getKeyValue(int index) {
     if (index >= 0 && index < 16) {
         return _keyValues[index];
@@ -281,6 +334,7 @@ int CustomKeyboard::getKeyValue(int index) {
     return -1;
 }
 
+// Getter-Methoden
 int CustomKeyboard::getPin() {
     return _pin;
 }
