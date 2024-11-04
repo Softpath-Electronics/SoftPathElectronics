@@ -6,7 +6,7 @@
  * er sie vor der Verwendung ausreichend getestet hat.
  * Durch die Nutzung dieser Software erklären Sie, dass Sie die Sicherheitswarnungen und Gebrauchsanweisungen gelesen und verstanden haben.
  * 
- * DISLAIMER:
+ * DISCLAIMER:
  * This software is provided "as-is" without any express or implied warranty.
  * In no event shall the author or company be held liable for any damages arising from the use of this software.
  * It is the user's responsibility to ensure that the software is suitable for their needs and that they have tested it
@@ -28,13 +28,11 @@ CustomKeyboard keyboard;
 
 void setup() {
     Serial.begin(115200);
-    while (!Serial) {
-        ; // Warten auf Serial Verbindung
-    }
+    // Entfernen der 'while (!Serial) { ; }' Zeile
     Serial.println("Keyboard Ready...");
 
-    // Beispielschlüssel, ersetzen durch den tatsächlichen Schlüssel aus dem Setup-Script
-    String key = "34 6 4 1 4095 1694 927 2815 1247 753 0 0 0 0 0 0 0 0 0 0";
+    // Beispielschlüssel, ersetzen Sie diesen durch den Schlüssel, den Sie aus der Kalibrierung erhalten haben
+    String key = "AUSGABE AUS DER KALIBRIERUNG HIER EINFÜGEN";
     keyboard.setupKey(key);
 }
 
@@ -44,6 +42,5 @@ void loop() {
         Serial.print("Taste gedrückt: ");
         Serial.println(key);
     }
-
     delay(100); // Zum Entprellen
 }
