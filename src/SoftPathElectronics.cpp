@@ -50,7 +50,7 @@ void CustomKeyboard::setupKeyboard() {
         _numKeys = readIntWithPrompt("Ungültige Anzahl der Tasten. Bitte erneut eingeben:");
     }
 
-    _tolerance = readIntWithPrompt("Gib die Toleranz ein (empfohlen: 4):");
+    _tolerance = readIntWithPrompt("Gib die Toleranz ein (empfohlen: 8):");
 
     _debounceMode = readBoolWithPrompt("Soll eine Taste erst gezählt werden, wenn der analoge Wert zwischendurch 0 war? (y/n):");
 
