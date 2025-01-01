@@ -18,3 +18,4 @@ By using this software, you agree that you have read and understood the safety w
 
 License: This library is licensed for personal, non-commercial use only. Commercial use, reproduction, or redistribution without prior written consent is prohibited.
 
+website: softpath-electronics.de
