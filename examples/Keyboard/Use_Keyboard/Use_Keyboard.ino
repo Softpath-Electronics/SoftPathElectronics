@@ -1,46 +1,45 @@
-/*
- * HAFTUNGSAUSSCHLUSS:
- * Diese Software wird "wie besehen" ohne ausdrückliche oder stillschweigende Garantie bereitgestellt.
- * In keinem Fall haftet der Autor oder das Unternehmen für Schäden, die durch die Verwendung dieser Software entstehen.
- * Es liegt in der Verantwortung des Nutzers sicherzustellen, dass die Software für seine Zwecke geeignet ist und dass
- * er sie vor der Verwendung ausreichend getestet hat.
- * Durch die Nutzung dieser Software erklären Sie, dass Sie die Sicherheitswarnungen und Gebrauchsanweisungen gelesen und verstanden haben.
- * 
- * DISCLAIMER:
- * This software is provided "as-is" without any express or implied warranty.
- * In no event shall the author or company be held liable for any damages arising from the use of this software.
- * It is the user's responsibility to ensure that the software is suitable for their needs and that they have tested it
- * sufficiently before using it in any project. By using this software, you agree that you have read and understood the safety warnings
- * and usage instructions.
- * 
- * LIZENZ:
- * Diese Software ist nur für den persönlichen, nicht-kommerziellen Gebrauch lizenziert. Eine kommerzielle Nutzung, 
- * Reproduktion oder Weiterverbreitung ist ohne vorherige schriftliche Zustimmung untersagt.
- * 
- * LICENSE:
- * This library is licensed for personal, non-commercial use only. Commercial use, reproduction, or redistribution without
- * prior written consent is prohibited.
- */
+/* -----------------------------------------------------------------------------
+   Beispiel-Sketch: UseKeyboard.ino
+   Haftungsausschluss:
+   Dieser Code ist ein einfaches Demonstrationsbeispiel zum Einlesen eines
+   analogen Keypads mit SoftPath. Prüfen Sie vor dem Einsatz, ob die Bibliothek
+   und dieses Beispiel zur eingesetzten Hardware-/Software-Umgebung passen.
+   Der Autor übernimmt keinerlei Haftung für Schäden oder Fehlfunktionen.
+   --------------------------------------------------------------------------- */
 
 #include <SoftPathElectronics.h>
 
-CustomKeyboard keyboard;
+/* Ersetzen Sie den folgenden Platzhalter-String durch den von der Kalibrierung
+   erzeugten Key-String. */
+const char KEY[] =
+  "SPK1 0 2 6 12 1 1023 318 187 510 241 157";   // <- Platzhalter
+
+SoftPathElectronics keypad;
 
 void setup() {
-    Serial.begin(115200);
-    // Entfernen der 'while (!Serial) { ; }' Zeile
-    Serial.println("Keyboard Ready...");
+  Serial.begin(115200);
+  while (!Serial) { }
 
-    // Beispielschlüssel, ersetzen Sie diesen durch den Schlüssel, den Sie aus der Kalibrierung erhalten haben
-    String key = "AUSGABE AUS DER KALIBRIERUNG HIER EINFÜGEN";
-    keyboard.setupKey(key);
+  if (!keypad.loadKey(KEY)) {
+    Serial.println(F("Ungültiger Key-String!"));
+    while (true) { }
+  }
+
+  keypad.setDebug(false);                     // Debug-Ausgaben
+  keypad.begin();
 }
 
 void loop() {
-    int key = keyboard.getKeyPressed();
-    if (key != -1) {
-        Serial.print("Taste gedrückt: ");
-        Serial.println(key);
-    }
-    delay(100); // Zum Entprellen
+  // Liest den aktuellen Tastenzustand vom Keypad aus
+  uint8_t k = keypad.read();
+
+  // Wenn eine Taste erkannt wurde (k != 0), wird sie ausgegeben
+  if (k) {
+    // Ausgabe der erkannten Taste über den seriellen Monitor
+    Serial.print(F("Gedrückt: Taste "));
+    Serial.println(k);  // Gibt die Nummer der gedrückten Taste aus
+  }
+
+  // Hinweis: Wird keine Taste gedrückt, liefert read() den Wert 0,
+  // und es erfolgt keine Ausgabe. So wird unnötige Ausgabe vermieden.
 }
